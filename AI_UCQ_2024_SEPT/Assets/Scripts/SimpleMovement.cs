@@ -13,9 +13,28 @@ public class SimpleMovement : MonoBehaviour
     [SerializeField]
     protected float MaxSpeed = 5;
 
+    // Queremos que nuestro agente tenga una posición en el espacio, y que tenga una velocidad actual a la que se está moviendo.
+    // La variable que nos dice en qué posición en el espacio está el dueño de este script es: transform.position
+
+    // Si ustedes quieren la posición de Otro gameObject que no sea el dueño de este script, también la accederían a través de 
+    // transform.position, pero de ese gameObject en específico.
+    // Por ejemplo, la posición del gameObject PiernaDerecha, tendrían que tener una referencia (una variable) a ese gameObject
+    // y de ahí, acceder a la variable de posición así: PiernaDerecha.transform.position.
+    
+
+    // La velocidad actual a la que se está moviendo debe estar guardada en una variable. Es lo mismo que CurrentSpeed.
+    protected Vector3 Velocity = Vector3.zero;
+
+    // Para manejar la aceleración, necesitamos otra variable, una que nos diga cuál es su máxima aceleración
+    [SerializeField]
+    protected float MaxAcceleration = 1.0f;
 
     // Necesitamos saber la posición de la "cosa de interés" a la cual nos queremos acercar o alejar.
     public GameObject targetGameObject = null;
+
+    // Queremos poder preguntarle al DebugConfigManager si ciertas banderas de debug están activadas.
+    // para ello, pues necesitamos tener una referencia al DebugConfigManager.
+    protected DebugConfigManager debugConfigManagerRef = null;
 
     //void Awake()
     //{
@@ -35,9 +54,11 @@ public class SimpleMovement : MonoBehaviour
 
     // Start is called before the first frame update
     // El orden de cuál Start se ejecuta primero puede variar de ejecución a ejecución.
-    void Start()
+    protected void Start()
     {
         Debug.Log("Se está ejecutando Start. " + gameObject.name);
+
+        debugConfigManagerRef = GameObject.FindAnyObjectByType<DebugConfigManager>();
         return;
     }
 
@@ -62,11 +83,13 @@ public class SimpleMovement : MonoBehaviour
 
         // Vector3 PosToTarget = -PuntaMenosCola(targetGameObject.transform.position, transform.position);  // FLEE
 
-        // Queremos que lo más rápido que pueda ir sea a MaxSpeed unidades por segundo. Sin importar qué tan grande se la
+        Velocity += PosToTarget.normalized * MaxAcceleration * Time.deltaTime;
+
+        // Queremos que lo más rápido que pueda ir sea a MaxSpeed unidades por segundo. Sin importar qué tan grande sea la
         // flecha de PosToTarget.
         // Como la magnitud y la dirección de un vector se pueden separar, únicamente necesitamos limitar la magnitud para
         // que no sobrepase el valor de MaxSpeed.
-        Vector3 Velocity = PosToTarget.normalized * MaxSpeed;
+        Velocity = Vector3.ClampMagnitude(Velocity, MaxSpeed);
 
         transform.position += Velocity * Time.deltaTime;
 
@@ -76,6 +99,30 @@ public class SimpleMovement : MonoBehaviour
 
     void FixedUpdate()
     {
+
+    }
+
+
+    void OnDrawGizmos()
+    {
+        if(debugConfigManagerRef != null)
+        {
+            if(debugConfigManagerRef.VelocityLines)
+            {
+                Gizmos.color = Color.yellow;
+                // Velocity SÍ tiene dirección y magnitud (es un vector de 1 o más dimensiones),
+                // mientras que Speed no, únicamente es una magnitud (o sea, un solo valor flotante)
+                // Primero, dibujamos la "flecha naranja" que es nuestra velocidad (Velocity) actual, partiendo desde nuestra posición actual.
+                Gizmos.DrawLine(transform.position, transform.position + Velocity);
+            }
+            // Ahora vamos con la "flecha azul" que es la dirección y magnitud hacia nuestro objetivo (la posición de nuestro objetivo).
+            if (debugConfigManagerRef.DesiredVectors)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawLine(transform.position, transform.position + (targetGameObject.transform.position - transform.position));
+            }
+
+        }
 
     }
 
