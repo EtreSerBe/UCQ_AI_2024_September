@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DebugConfigManager;
 
 public class SimpleMovement : MonoBehaviour
 {
@@ -34,7 +35,7 @@ public class SimpleMovement : MonoBehaviour
 
     // Queremos poder preguntarle al DebugConfigManager si ciertas banderas de debug están activadas.
     // para ello, pues necesitamos tener una referencia al DebugConfigManager.
-    protected DebugConfigManager debugConfigManagerRef = null;
+    // protected DebugConfigManager debugConfigManagerRef = null;
 
     //void Awake()
     //{
@@ -58,7 +59,7 @@ public class SimpleMovement : MonoBehaviour
     {
         Debug.Log("Se está ejecutando Start. " + gameObject.name);
 
-        debugConfigManagerRef = GameObject.FindAnyObjectByType<DebugConfigManager>();
+        // debugConfigManagerRef = GameObject.FindAnyObjectByType<DebugConfigManager>();
         return;
     }
 
@@ -66,8 +67,8 @@ public class SimpleMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log("Update número: " + ContadorDeCuadros);
-        ContadorDeCuadros++;
+        // Debug.Log("Update número: " + ContadorDeCuadros);
+        // ContadorDeCuadros++;
         // este movimiento basado en cuántos cuadros han transcurrido no es justo para la gente con menos poder de cómputo
         // transform.position = new Vector3(ContadorDeCuadros, 0, -1);
         // Ahorita tenemos una velocidad de 1 unidad en el eje X por cada cuadro de ejecución.
@@ -105,23 +106,20 @@ public class SimpleMovement : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if(debugConfigManagerRef != null)
-        {
-            if(debugConfigManagerRef.VelocityLines)
-            {
-                Gizmos.color = Color.yellow;
-                // Velocity SÍ tiene dirección y magnitud (es un vector de 1 o más dimensiones),
-                // mientras que Speed no, únicamente es una magnitud (o sea, un solo valor flotante)
-                // Primero, dibujamos la "flecha naranja" que es nuestra velocidad (Velocity) actual, partiendo desde nuestra posición actual.
-                Gizmos.DrawLine(transform.position, transform.position + Velocity);
-            }
-            // Ahora vamos con la "flecha azul" que es la dirección y magnitud hacia nuestro objetivo (la posición de nuestro objetivo).
-            if (debugConfigManagerRef.DesiredVectors)
-            {
-                Gizmos.color = Color.blue;
-                Gizmos.DrawLine(transform.position, transform.position + (targetGameObject.transform.position - transform.position));
-            }
 
+        if(DebugGizmoManager.VelocityLines)
+        {
+            Gizmos.color = Color.yellow;
+            // Velocity SÍ tiene dirección y magnitud (es un vector de 1 o más dimensiones),
+            // mientras que Speed no, únicamente es una magnitud (o sea, un solo valor flotante)
+            // Primero, dibujamos la "flecha naranja" que es nuestra velocidad (Velocity) actual, partiendo desde nuestra posición actual.
+            Gizmos.DrawLine(transform.position, transform.position + Velocity);
+        }
+        // Ahora vamos con la "flecha azul" que es la dirección y magnitud hacia nuestro objetivo (la posición de nuestro objetivo).
+        if (DebugGizmoManager.DesiredVectors)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(transform.position, transform.position + (targetGameObject.transform.position - transform.position));
         }
 
     }

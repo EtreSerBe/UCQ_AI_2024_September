@@ -875,6 +875,7 @@ GameObject:
   - component: {fileID: 1335112127}
   - component: {fileID: 1335112126}
   - component: {fileID: 1335112128}
+  - component: {fileID: 1335112129}
   m_Layer: 0
   m_Name: Amogus
   m_TagString: Untagged
@@ -964,7 +965,7 @@ Transform:
   m_GameObject: {fileID: 1335112121}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -1, z: -0, w: -0.00000016391276}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.55, y: 6.62, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1034,6 +1035,30 @@ MonoBehaviour:
   MaxSpeed: 1
   MaxAcceleration: 5
   targetGameObject: {fileID: 667569020}
+  TargetPos: {x: -1, y: 1, z: 0}
+  SpherePos: {x: 2, y: 1, z: 0}
+  SphereRadius: 5.06
+--- !u!135 &1335112129
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1335112121}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Radius: 4.31
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1760315968
 GameObject:
   m_ObjectHideFlags: 0
@@ -1148,7 +1173,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1949998753}
-  - component: {fileID: 1949998752}
   m_Layer: 0
   m_Name: DebugManager
   m_TagString: Untagged
@@ -1156,20 +1180,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1949998752
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1949998751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc2a5b37a5c11414fb312b73e91bfb61, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  VelocityLines: 1
-  DesiredVectors: 1
 --- !u!4 &1949998753
 Transform:
   m_ObjectHideFlags: 0

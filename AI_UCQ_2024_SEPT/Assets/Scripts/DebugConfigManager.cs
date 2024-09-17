@@ -2,21 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DebugConfigManager : MonoBehaviour
+namespace DebugConfigManager
 {
-
-    public bool VelocityLines = true;
-    public bool DesiredVectors = true;
-
-    // Start is called before the first frame update
-    void Start()
+    public class DebugGizmoManager 
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+    
+        public static bool VelocityLines = true;
+        public static bool DesiredVectors = true;
+        public static bool DetectionSphere = true;
+    
     }
 }
