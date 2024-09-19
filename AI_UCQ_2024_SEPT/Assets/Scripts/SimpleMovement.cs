@@ -24,11 +24,14 @@ public class SimpleMovement : MonoBehaviour
     
 
     // La velocidad actual a la que se está moviendo debe estar guardada en una variable. Es lo mismo que CurrentSpeed.
-    protected Vector3 Velocity = Vector3.zero;
+    public Vector3 Velocity = Vector3.zero;
 
     // Para manejar la aceleración, necesitamos otra variable, una que nos diga cuál es su máxima aceleración
     [SerializeField]
     protected float MaxAcceleration = 1.0f;
+
+    // Qué tanto tiempo a futuro (o pasado, si es negativa) va a predecir el movimiento de su target.
+    protected float PursuitTimePrediction = 1.0f;
 
     // Necesitamos saber la posición de la "cosa de interés" a la cual nos queremos acercar o alejar.
     public GameObject targetGameObject = null;
@@ -80,9 +83,23 @@ public class SimpleMovement : MonoBehaviour
 
 
         // Cada cuadro hay que actualizar el vector que nos dice a dónde perseguir a nuestro objetivo.
-        Vector3 PosToTarget = PuntaMenosCola(targetGameObject.transform.position, transform.position); // SEEK
+        // Vector3 PosToTarget = PuntaMenosCola(targetGameObject.transform.position, transform.position); // SEEK
 
         // Vector3 PosToTarget = -PuntaMenosCola(targetGameObject.transform.position, transform.position);  // FLEE
+
+
+        // Hay que pedirle al targetGameObject que nos dé acceso a su Velocity, la cual está en el script SimpleMovement
+        Vector3 currentVelocity = targetGameObject.GetComponent<SimpleMovement>().Velocity;
+
+        PursuitTimePrediction = CalculatePredictedTime(MaxSpeed, transform.position, targetGameObject.transform.position);
+
+        // Primero predigo dónde va a estar mi objetivo
+        Vector3 PredictedPosition =
+            PredictPosition(targetGameObject.transform.position, currentVelocity, PursuitTimePrediction);
+
+        // Hago seek hacia la posición predicha.
+        Vector3 PosToTarget = PuntaMenosCola(PredictedPosition, transform.position); // SEEK
+
 
         Velocity += PosToTarget.normalized * MaxAcceleration * Time.deltaTime;
 
@@ -96,6 +113,27 @@ public class SimpleMovement : MonoBehaviour
 
 
         // transform.position += 
+    }
+
+    // Esta función predice a dónde se moverá un objeto cuya posición actual es InitialPosition, su velocidad actual es Velocity,
+    // tras una cantidad de tiempo TimePrediction.
+    Vector3 PredictPosition(Vector3 InitialPosition, Vector3 Velocity, float TimePrediction)
+    {
+        // Con base en la Velocity dada vamos a calcular en qué posición estará nuestro objeto con posición InitialPosition,
+        // tras una cantidad X de tiempo (TimePrediction).
+        return InitialPosition + Velocity * TimePrediction;
+
+        // nosotros empezamos
+    }
+
+    float CalculatePredictedTime(float MaxSpeed, Vector3 InitialPosition, Vector3 TargetPosition)
+    {
+        // Primero obtenemos la distancia entre InitialPosition y TargetPosition. Lo hacemos con un punta menos cola, 
+        // y nos quedamos con la pura magnitud, porque solo queremos saber cuánto distancia hay entre ellos, no en qué dirección.
+        float Distance = PuntaMenosCola(TargetPosition, InitialPosition).magnitude;
+
+        // Luego, dividimos nuestra distancia obtenida entre nuestra velocidad máxima.
+        return Distance / MaxSpeed;
     }
 
     void FixedUpdate()
@@ -116,12 +154,26 @@ public class SimpleMovement : MonoBehaviour
             Gizmos.DrawLine(transform.position, transform.position + Velocity);
         }
         // Ahora vamos con la "flecha azul" que es la dirección y magnitud hacia nuestro objetivo (la posición de nuestro objetivo).
-        if (DebugGizmoManager.DesiredVectors)
+        if (DebugGizmoManager.DesiredVectors && targetGameObject != null)
         {
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(transform.position, transform.position + (targetGameObject.transform.position - transform.position));
         }
 
+        if(targetGameObject != null) 
+        { 
+            // Vamos a dibujar la posición a futuro que está prediciendo.
+            Vector3 currentVelocity = targetGameObject.GetComponent<SimpleMovement>().Velocity;
+
+            PursuitTimePrediction = CalculatePredictedTime(MaxSpeed, transform.position, targetGameObject.transform.position);
+
+            // Primero predigo dónde va a estar mi objetivo
+            Vector3 PredictedPosition =
+                PredictPosition(targetGameObject.transform.position, currentVelocity, PursuitTimePrediction);
+
+            Gizmos.color = Color.red;
+            Gizmos.DrawCube(PredictedPosition, Vector3.one);
+        }
     }
 
 
