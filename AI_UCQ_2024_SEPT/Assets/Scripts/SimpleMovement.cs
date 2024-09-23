@@ -89,6 +89,13 @@ public class SimpleMovement : MonoBehaviour
 
 
         // Hay que pedirle al targetGameObject que nos dé acceso a su Velocity, la cual está en el script SimpleMovement
+        // Cuando usen algo que le pertenezca a un objeto que pueda llegar a ser null, chéquenlo.
+        if (targetGameObject == null)
+        {
+            // lo importante aquí es que hicimos que ya no truene.
+            return; // OJO: ahorita, en este en específico, ya no va a hacer nada, ni siquiera moverse, cuando sea null.
+        }
+
         Vector3 currentVelocity = targetGameObject.GetComponent<SimpleMovement>().Velocity;
 
         PursuitTimePrediction = CalculatePredictedTime(MaxSpeed, transform.position, targetGameObject.transform.position);

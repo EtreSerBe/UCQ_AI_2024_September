@@ -8,15 +8,15 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - EnemyTrigger
+  - Bullet
+  - PowerUp
+  - Wall
+  - EnemyCollider
+  - Obstacle
   - 
   - 
   - 
