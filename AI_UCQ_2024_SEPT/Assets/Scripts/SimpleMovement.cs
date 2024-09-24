@@ -36,6 +36,17 @@ public class SimpleMovement : MonoBehaviour
     // Necesitamos saber la posición de la "cosa de interés" a la cual nos queremos acercar o alejar.
     public GameObject targetGameObject = null;
 
+    [SerializeField]
+    protected float ObstacleForceToApply = 1.0f;
+
+
+    protected Vector3 ExternalForces = Vector3.zero;
+
+    public void AddExternalForce(Vector3 ExternalForce)
+    {
+        ExternalForces += ExternalForce;
+    }
+
     // Queremos poder preguntarle al DebugConfigManager si ciertas banderas de debug están activadas.
     // para ello, pues necesitamos tener una referencia al DebugConfigManager.
     // protected DebugConfigManager debugConfigManagerRef = null;
@@ -66,10 +77,54 @@ public class SimpleMovement : MonoBehaviour
         return;
     }
 
+    // Aquí, other va a ser el obstáculo, no el agente.
+    void OnTriggerStay(Collider other)
+    {
+
+        // Si esta colisión es contra alguien que NO es un obstáculo (es decir, no está en la Layer de Obstacle),
+        // entonces, no hagas nada.
+        if (other.gameObject.layer != LayerMask.NameToLayer("Obstacle"))
+        {
+            return;
+        }
+
+        // Si detectamos que un agente está dentro de nuestro radio/área de activación (en este caso es nuestro trigger),
+        // calculamos un vector con origen en la posición de este objeto, y cuyo fin es la posición de ese agente
+        // NOTA: Esta resta es hacia el CENTRO del agente, por lo que sí puede llegar a ser más grande que el radius del collider.
+        Vector3 OriginToAgent = transform.position - other.transform.position;
+        // y después se lo aplicamos al agente como una fuerza que afecta su steering behavior.
+        //SimpleMovement otherSimpleMovement = GetComponent<SimpleMovement>();
+        // aquí podemos usar "this" en vez de hacer el getComponent que hacíamos cuando estábamos en el obstáculo.
+
+        Debug.Log("Entré a OnTriggerStay de SimpleMovement con: " + other.gameObject.name);
+
+        // Queremos que entre más cerca esté el agente de este obstáculo, más grande sea la fuerza que se aplica.
+        // entre más chica sea la distancia entre estos dos objetos, con relación al radio del trigger, mayor 
+        // será la fuerza aplicada.
+
+        float distance = OriginToAgent.magnitude;
+
+        SphereCollider collider = GetComponent<SphereCollider>();
+        if (collider == null)
+        {
+            return;
+        }
+
+        // collider.radius nos da el radio en espacio local, sin embargo, nosotros lo necesitamos en espacio de mundo
+        // es decir, escalado por las escalas de sus padres en la Jerarquía de la escena. 
+        float obstacleColliderRadius = collider.radius; // * transform.lossyScale.y;
+
+        float calculatedForce = ObstacleForceToApply * (1.0f - distance / obstacleColliderRadius);
+
+        AddExternalForce(OriginToAgent.normalized * calculatedForce);
+    }
+
 
     // Update is called once per frame
     void Update()
     {
+
+
         // Debug.Log("Update número: " + ContadorDeCuadros);
         // ContadorDeCuadros++;
         // este movimiento basado en cuántos cuadros han transcurrido no es justo para la gente con menos poder de cómputo
@@ -77,7 +132,7 @@ public class SimpleMovement : MonoBehaviour
         // Ahorita tenemos una velocidad de 1 unidad en el eje X por cada cuadro de ejecución.
         // Qué tal si hacemos que avance una unidad en X por cada segundo que transcurra?
 
-        
+
         // modificando la posición (acumulando los cambios)
         // transform.position += new Vector3(1 * Time.deltaTime, 0, 0);
 
@@ -107,6 +162,8 @@ public class SimpleMovement : MonoBehaviour
         // Hago seek hacia la posición predicha.
         Vector3 PosToTarget = PuntaMenosCola(PredictedPosition, transform.position); // SEEK
 
+        PosToTarget += ExternalForces;
+
 
         Velocity += PosToTarget.normalized * MaxAcceleration * Time.deltaTime;
 
@@ -118,6 +175,10 @@ public class SimpleMovement : MonoBehaviour
 
         transform.position += Velocity * Time.deltaTime;
 
+
+        // Hay que resetearlas cada frame, si no se van a seguir aplicando aunque ya no se las deban aplicar.
+        // Hay que resetearla al final del cuadro, si no se le va a quitar antes de poder utilizarla.
+        ExternalForces = Vector3.zero;
 
         // transform.position += 
     }
