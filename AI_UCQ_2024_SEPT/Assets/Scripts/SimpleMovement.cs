@@ -96,7 +96,7 @@ public class SimpleMovement : MonoBehaviour
         //SimpleMovement otherSimpleMovement = GetComponent<SimpleMovement>();
         // aquí podemos usar "this" en vez de hacer el getComponent que hacíamos cuando estábamos en el obstáculo.
 
-        Debug.Log("Entré a OnTriggerStay de SimpleMovement con: " + other.gameObject.name);
+        // Debug.Log("Entré a OnTriggerStay de SimpleMovement con: " + other.gameObject.name);
 
         // Queremos que entre más cerca esté el agente de este obstáculo, más grande sea la fuerza que se aplica.
         // entre más chica sea la distancia entre estos dos objetos, con relación al radio del trigger, mayor 
