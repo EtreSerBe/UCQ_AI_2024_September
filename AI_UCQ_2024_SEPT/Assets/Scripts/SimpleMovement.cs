@@ -1,7 +1,72 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DebugConfigManager;
+
+
+public enum WeaponType
+{
+    Weak,
+    Normal,
+    Hielo,
+    Fuego,
+    Trueno
+}
+
+public enum EnemyState
+{
+    Idle,
+    Alert, // sospechoso/investigando/etc.
+    Attack // ya te detectó y te ataca.
+}
+
+
+// On/Off son dos posibilidades únicamente
+// true/false son dos posibilidades únicamente
+// cliente/servidor
+// para todas esas situaciones donde solo hay dos posibilidades, nos basta con un solo bit.
+
+// cuántos bits tiene un booleano? 8 bits, que son un byte.
+// 8 bits almacenan hasta 256 posibilidades (2^8)
+// qué pasa con los otros 7 bits que no usamos para true/false?
+// una posibilidad es meter otros true/false en los bits restantes.
+
+// por ejemplo, el primer bit podría ser, OrigenDelMensaje (o cliente o servidor)
+// otro podría ser: JugadorPremium (1 si sí es, 0 si no es)
+// 
+
+public enum ExampleMessageBits
+{
+    ClientOrServer = 1, // [0 0 0 0 0 0 0 X ]
+    PremiumUser = 2, // [0 0 0 0 0 0 X 0 ]
+    EstáVolando = 4, // [0 0 0 0 0 X 0 0 ]
+    OtraCosa = 8, // [0 0 0 0 X 0 0 0 ]
+    OtraMas = 16,
+}
+
+public enum Layers
+{
+    Default = 1,
+    TransparentFX = 2,
+
+}
+
+
+// Armas[5] = {Weak, Normal, Hielo, Fuego, Trueno}
+
+// Armas[0]
+
+// Armas[WeaponType.Normal]
+
+
+// Desventajas: es más largo de escribir, puede parecer tedioso al inicio.
+
+// Ventajas: 
+// 1) Claridad. 0 es mucho menos claro para alguien que "WeaponType.Normal"
+// 2) Exclusividad. No te deja asignar valores numéricos directamente a una variable de tipo enum (a menos que hayas puesto la conversión
+//  explícita, que casi nunca lo deberían de hacer ni necesitar).
+// 3) Poder separar claramente distintas opciones de ejecución de un programa. (por ejemplo, lo del EnemyState mostrado arriba).
 
 public class SimpleMovement : MonoBehaviour
 {
@@ -39,8 +104,14 @@ public class SimpleMovement : MonoBehaviour
     [SerializeField]
     protected float ObstacleForceToApply = 1.0f;
 
+    [SerializeField]
+    private WeaponType myWeaponType;
+
+    protected EnemyState currentEnemyState = EnemyState.Idle;
 
     protected Vector3 ExternalForces = Vector3.zero;
+
+    [SerializeField] protected String ObstacleLayerName = "Obstacle";
 
     public void AddExternalForce(Vector3 ExternalForce)
     {
@@ -73,6 +144,8 @@ public class SimpleMovement : MonoBehaviour
     {
         Debug.Log("Se está ejecutando Start. " + gameObject.name);
 
+        // myWeaponType = 1;  // No te deja, para mantener esa exclusividad de los enum.
+
         // debugConfigManagerRef = GameObject.FindAnyObjectByType<DebugConfigManager>();
         return;
     }
@@ -83,7 +156,7 @@ public class SimpleMovement : MonoBehaviour
 
         // Si esta colisión es contra alguien que NO es un obstáculo (es decir, no está en la Layer de Obstacle),
         // entonces, no hagas nada.
-        if (other.gameObject.layer != LayerMask.NameToLayer("Obstacle"))
+        if (other.gameObject.layer != LayerMask.NameToLayer(ObstacleLayerName))
         {
             return;
         }
@@ -123,6 +196,15 @@ public class SimpleMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        switch (myWeaponType)
+        {
+            case WeaponType.Weak:
+                // Atacar con el arma weak
+                break;
+            case WeaponType.Normal: 
+                // atacar con el arma Normal.
+                break;
+        }
 
 
         // Debug.Log("Update número: " + ContadorDeCuadros);
@@ -185,7 +267,7 @@ public class SimpleMovement : MonoBehaviour
 
     // Esta función predice a dónde se moverá un objeto cuya posición actual es InitialPosition, su velocidad actual es Velocity,
     // tras una cantidad de tiempo TimePrediction.
-    Vector3 PredictPosition(Vector3 InitialPosition, Vector3 Velocity, float TimePrediction)
+    protected Vector3 PredictPosition(Vector3 InitialPosition, Vector3 Velocity, float TimePrediction)
     {
         // Con base en la Velocity dada vamos a calcular en qué posición estará nuestro objeto con posición InitialPosition,
         // tras una cantidad X de tiempo (TimePrediction).
@@ -194,7 +276,7 @@ public class SimpleMovement : MonoBehaviour
         // nosotros empezamos
     }
 
-    float CalculatePredictedTime(float MaxSpeed, Vector3 InitialPosition, Vector3 TargetPosition)
+    protected float CalculatePredictedTime(float MaxSpeed, Vector3 InitialPosition, Vector3 TargetPosition)
     {
         // Primero obtenemos la distancia entre InitialPosition y TargetPosition. Lo hacemos con un punta menos cola, 
         // y nos quedamos con la pura magnitud, porque solo queremos saber cuánto distancia hay entre ellos, no en qué dirección.
@@ -202,6 +284,23 @@ public class SimpleMovement : MonoBehaviour
 
         // Luego, dividimos nuestra distancia obtenida entre nuestra velocidad máxima.
         return Distance / MaxSpeed;
+    }
+
+    protected Vector3 Pursuit(Vector3 TargetCurrentPosition, Vector3 TargetCurrentVelocity)
+    {
+        PursuitTimePrediction = CalculatePredictedTime(MaxSpeed, transform.position, TargetCurrentPosition);
+
+        // Primero predigo dónde va a estar mi objetivo
+        Vector3 PredictedPosition =
+            PredictPosition(TargetCurrentPosition, TargetCurrentVelocity, PursuitTimePrediction);
+
+        // Hago seek hacia la posición predicha.
+        return PuntaMenosCola(PredictedPosition, transform.position); // SEEK
+    }
+
+    protected Vector3 Evade(Vector3 TargetCurrentPosition, Vector3 TargetCurrentVelocity)
+    {
+        return - Pursuit(TargetCurrentPosition, TargetCurrentVelocity);
     }
 
     void FixedUpdate()
