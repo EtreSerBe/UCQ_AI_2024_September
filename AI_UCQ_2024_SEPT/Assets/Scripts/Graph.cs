@@ -58,6 +58,7 @@ public class Graph : MonoBehaviour
     // int [10]Array
     // Desventajas: Te da el espacio de memoria completo (lo vayas a usar o no, lo que puede llevar a desperdicios).
     // desventajas: su tamaño (capacidad de almacenamiento) es totalmente estático.
+    // desventajas: poner y quitar elementos que hagan que cambie el tamaño del array es MUY lento.
 
 
     // ¿Qué es un "Set" en estructuras de datos / programación?
@@ -109,8 +110,89 @@ public class Graph : MonoBehaviour
         EdgeSet.Add(EdgeEG);
         EdgeSet.Add(EdgeEH);
 
+        if (RecursiveDFS(NodeA, NodeH))
+        {
+            Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        }
+        else
+        {
+            Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        }
+
         // FuncionRecursiva(0);  // comentada para que no truene ahorita.
     }
+
+    // Vamos a implementar el algoritmo de depth-first search (DFS) usando la pila de llamadas,
+    // de manera recursiva.
+    // ¿Qué pregunta nos va a responder o qué resultado nos va a dar?
+    // Pues nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)
+    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante.
+    bool RecursiveDFS(Node Origin, Node Goal)
+    {
+        // Para evitar que alguien se vuelva padre del nodo raíz de todo el árbol
+        // hacemos que el nodo raíz del árbol sea su propio padre.
+        if (Origin.Parent == null)
+        {
+            // si esto se cumple, entonces este nodo es la raíz del árbol.
+            Origin.Parent = Origin;
+        }
+
+        // La condición de terminación de esta función recursiva es 
+        // "el nodo en el que estoy actualmente (Origin) es la meta (Goal)"
+        if (Origin == Goal)
+            return true;
+
+        // Desde el nodo donde estamos ahorita, checamos cuáles son nuestros vecinos.
+        // Los vecinos de este nodo son los que comparten una arista con él.
+        // lo que podemos hacer es revisar todas las aristas y obtener las que hagan referencia a este nodo.
+        // 1) Checar todas las aristas.
+        foreach (Edge currentEdge in EdgeSet)
+        {
+            bool Result = false;
+            Node Neighbor = null;
+            // Vamos a checar si la arista en cuestión hace referencia a este nodo "Origin"
+            // Checamos su A y su B. Y tenemos que checar que el vecino NO tenga padre, para que Origin 
+            // se convierta en su padre.
+            if (currentEdge.A == Origin && currentEdge.B.Parent == null)
+            {
+                // entonces sí hace referencia a este nodo. Lo que hacemos es meter al Nodo vecino.
+                // Si encontramos un vecino, primero le decimos que el nodo Origin actual es
+                // su nodo padre, y después mandamos a llamar la función de nuevo, pero 
+                // usando a este vecino como el nuevo origen.
+                currentEdge.B.Parent = Origin;
+                Neighbor = currentEdge.B;
+            }
+            else if (currentEdge.B == Origin && currentEdge.A.Parent == null)
+            {
+                // entonces sí hace referencia a este nodo. Lo que hacemos es meter al Nodo vecino.
+                // Si encontramos un vecino, primero le decimos que el nodo Origin actual es
+                // su nodo padre, y después mandamos a llamar la función de nuevo, pero 
+                // usando a este vecino como el nuevo origen.
+                currentEdge.A.Parent = Origin;
+                Neighbor = currentEdge.A;
+            }
+
+            // Necesitamos esta comprobación por si no entra ni al if ni al if else de arriba.
+            if(Neighbor != null)
+                Result = RecursiveDFS(Neighbor, Goal);
+
+
+            if (Result == true)
+            {
+                // Si este nodo fue parte del camino al Goal, le decimos que imprima su nombre.
+                Debug.Log("El nodo: " + Origin.Name + " fue parte del camino a la meta.");
+
+                // entonces el hijo de este nodo ya encontró el camino
+                // y eso hace una reacción en cadena de "Papá, sí encontré el camino".
+                return true;
+            }
+        }
+
+        // si ya acabó el ciclo de intentar visitar a sus vecinos, se regresa a la función del nodo
+        // que es su padre.
+        return false;
+    }
+
 
     // Funciones recursivas VS funciones iterativas.
 
@@ -118,9 +200,24 @@ public class Graph : MonoBehaviour
     void FuncionRecursiva(int Counter)
     {
         Debug.Log("Hola número: " + Counter);
+        if (Counter == 10)
+            return;
         FuncionRecursiva(Counter+1);
     }
 
+    // MyArray [0, 1, 2, 3, 4...]
+
+    // MyStack [0]
+    // [1, 0]
+    // 2, 1, 0
+    // 3, 2, 1, 0
+    // Ahora vamoas a sacar elementos
+    // sacas el 3, que es el último que metiste, y te quedaría:
+    // 2, 1, 0
+    // 1, 0, 
+    // 0
+    // Last in, First out
+    // solo puedes sacar el último elemento que metiste.
 
     // Update is called once per frame
     void Update()
