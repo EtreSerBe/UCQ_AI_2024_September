@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+using static UnityEngine.UI.Image;
 
 
 
@@ -110,17 +111,156 @@ public class Graph : MonoBehaviour
         EdgeSet.Add(EdgeEG);
         EdgeSet.Add(EdgeEH);
 
-        if (RecursiveDFS(NodeA, NodeH))
+        if (DFS(NodeA, NodeH))
         {
-            Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+            Debug.Log("ITERATIVO: Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
         else
         {
-            Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+            Debug.Log("ITERATIVO: No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
+
+        //if (RecursiveDFS(NodeA, NodeH))
+        //{
+        //    Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        //}
+        //else
+        //{
+        //    Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        //}
+
+
 
         // FuncionRecursiva(0);  // comentada para que no truene ahorita.
     }
+
+
+    // Nuestro DFS iterativo debe dar exactamente los mismos resultados que el recursivo.
+    // Nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)
+    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante.
+    bool DFS(Node Origin, Node Goal)
+    {
+        // Para saber cuántos nodos hay todavía por visitar,
+        // necesitamos llevar registro de cuáles nodos ya hemos visitado.
+        // Necesitamos dos contenedores de nodos, uno para los ya visitados y otro para los conocidos.
+
+        // Un Set es un contenedor perfecto para los visitados, 
+        // ya que solo necesitamos saber si ya está dentro de visitados o no.
+        HashSet<Node> VisitedNodes = new HashSet<Node>();
+
+        // Podemos usar la estructura de datos Pila (stack) para reemplazar la Pila de llamadas que usaba la versión recursiva
+        // del algoritmo para mantener su orden.
+        // ¿Cuándo se meten nodos en la pila? En cuanto tu nodo actual lo puede alcanzar (tiene una arista con él), Y no 
+        // tiene ya un padre asignado (el que no tenga parent quiere decir que ningún otro nodo ha llegado ya a este nuevo nodo).
+        // Los nodos que todavía estén en esta pila son los nodos que todavía hay por visitar.
+        Stack<Node> KnownStack = new Stack<Node>();
+
+        // Con esto evitamos que algún otro nodo trate de meter al origin en los nodos por visitar.
+        Origin.Parent = Origin;
+
+        // Para que no se termine el While inmediatamente (porque la KnownStack está vacía)
+        // nosotros tenemos que meter al menos un nodo a dicha Stack. Metemos el único no que tenemos certeza de que podemos alcanzar ahorita.
+        KnownStack.Push(Origin);
+
+        Node CurrentNode = null;
+
+        // Para "simular" la recursividad, necesitamos hacer un ciclo, ya sea un for o un while, etc.
+        // Nuestro ciclo va a tener como condición de finalización las mismas condiciones que la versión recursiva:
+        // es decir: 1) Ya llegué a la meta (goal); 2) No hay camino en absoluto,
+        // esta condición 2, se cumple cuando ya visitaste TODOS los nodos que pudiste alcanzar y ninguno de ellos fue la meta (goal).
+        while ( CurrentNode != Goal && KnownStack.Count != 0 ) /* todavía haya nodos por visitar */
+        {
+            // Las pilas (Stack) se trabajan sobre el elemento que está en el tope de la pila.
+            CurrentNode = KnownStack.Peek(); // lee el elemento del tope de la pila PERO no lo saques.
+            Debug.Log("Nodo: " + CurrentNode.Name);
+
+            // Ahora queremos meter a la Pila a los vecinos de current que no tengan parent y que no estén en los visitados.
+            // paso 1) Obtener sus vecinos
+            List<Node> currentNeighbors = GetNeighbors(CurrentNode);
+
+            // paso 2) filtrar a los que ya estén en visitados.
+            List<Node> nonVisitedNodes = RemoveVisitedNodes(currentNeighbors, VisitedNodes);
+
+            // paso 3) filtrar a los que tengan parent.
+            List<Node> nonParentNeighbors = RemoveNodesWithParent(nonVisitedNodes);
+
+            // Ahora sí, ya podemos meter a la pila al primero de esa lista de los que quedaron después de filtrar (nonParentNeighbors)
+            if (nonParentNeighbors.Count > 0)
+            {
+                // Como este nodo currentNode está metiendo a la stack al nodo "nonParentNeighbors[0]", entonces currentNode se vuelve su padre.
+                nonParentNeighbors[0].Parent = CurrentNode;
+
+                // entonces sí hay alguien a quien meter en la pila, y metemos al primer elemento de dicha lista.
+                KnownStack.Push(nonParentNeighbors[0]);
+                continue;
+            }
+
+            // Un nodo no se saca de la pila hasta que ya no tiene otro nodo a quien meter a la pila.
+            Node PoppedNode = KnownStack.Pop();
+
+            // Después de hacerle Pop, lo tenemos que meter a los visitados.
+            VisitedNodes.Add(PoppedNode);
+        }
+
+        // Nos falta comprobar por qué se rompió el ciclo while de arriba.
+        // Si esto se cumple, es porque sí llegamos a la meta.
+        if (Goal == CurrentNode)
+            return true;
+
+        // Si no, ¡pues no!
+        return false;
+    }
+
+    // Hacemos una función que nos dé los vecinos para poder reutilizarla y que nuestras funciones no tengan tantas líneas de código.
+    // Nos dice cuáles nodos comparten una arista con inNode
+    List<Node> GetNeighbors(Node inNode)
+    {
+        List<Node> Neighbors = new List<Node>();
+
+        foreach (Edge currentEdge in EdgeSet)
+        {
+            // Vamos a checar si la arista en cuestión hace referencia a este nodo "CurrentNode". Checamos su A y su B. 
+            if (currentEdge.A == inNode)
+            {
+                Neighbors.Add(currentEdge.B);
+            }
+            else if (currentEdge.B == inNode)
+            {
+                Neighbors.Add(currentEdge.A);
+            }
+        }
+
+        return Neighbors;
+    }
+
+    List<Node> RemoveNodesWithParent(List<Node> NodesToBeFiltered)
+    {
+        List<Node> FilteredNeighbors = new List<Node>();
+        foreach (Node neighbor in NodesToBeFiltered)
+        {
+            // ¿Este nodo tiene Parent? Si no, lo añadimos a los que vamos a regresar.
+            if (neighbor.Parent == null)
+            {
+                FilteredNeighbors.Add(neighbor);
+            }
+        }
+
+        return FilteredNeighbors;
+    }
+
+    List<Node> RemoveVisitedNodes(List<Node> NodesToBeFiltered, HashSet<Node> VisitedNodesSet)
+    {
+        List<Node> nonVisitedNodes = new List<Node>();
+        foreach (Node neighbor in NodesToBeFiltered)
+        {
+            // Si los nodos visitados no contienen a este nodo, no lo quitamos.
+            if (!VisitedNodesSet.Contains(neighbor))
+                nonVisitedNodes.Add(neighbor);
+        }
+
+        return nonVisitedNodes;
+    }
+
 
     // Vamos a implementar el algoritmo de depth-first search (DFS) usando la pila de llamadas,
     // de manera recursiva.
