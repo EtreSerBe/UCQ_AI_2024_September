@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using static UnityEngine.UI.Image;
@@ -111,7 +112,10 @@ public class Graph : MonoBehaviour
         EdgeSet.Add(EdgeEG);
         EdgeSet.Add(EdgeEH);
 
-        if (DFS(NodeA, NodeH))
+        List<Node> PathToGoalDFS = new List<Node>();
+
+        // OJO: no olviden poner el out antes de los parámetros que son de salida.
+        if (DFS(NodeA, NodeH, out PathToGoalDFS))
         {
             Debug.Log("ITERATIVO: Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
@@ -120,26 +124,39 @@ public class Graph : MonoBehaviour
             Debug.Log("ITERATIVO: No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
 
-        //if (RecursiveDFS(NodeA, NodeH))
-        //{
-        //    Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
-        //}
-        //else
-        //{
-        //    Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
-        //}
+        ResetNodes(NodeSet);
 
+        if (RecursiveDFS(NodeA, NodeH))
+        {
+            Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        }
+        else
+        {
+            Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        }
 
 
         // FuncionRecursiva(0);  // comentada para que no truene ahorita.
     }
 
+    // No recibe nada porque ya los tenemos guardados en el NodeSet
+    void ResetNodes(HashSet<Node> inNodeSet)
+    {
+        foreach (Node node in inNodeSet)
+        {
+            node.Parent = null;
+        }
+    }
+
 
     // Nuestro DFS iterativo debe dar exactamente los mismos resultados que el recursivo.
     // Nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)
-    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante.
-    bool DFS(Node Origin, Node Goal)
+    // y si sí hay un camino, nos dice cuál fue. Esto del camino tiene un truco interesante: El Backtracking.
+    // El camino nos lo pasará a través del parámetro de salida: PathToGoal (nótese el término "out" que lo marca como de salida).
+    bool DFS(Node Origin, Node Goal, out List<Node> PathToGoal)
     {
+        PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
+
         // Para saber cuántos nodos hay todavía por visitar,
         // necesitamos llevar registro de cuáles nodos ya hemos visitado.
         // Necesitamos dos contenedores de nodos, uno para los ya visitados y otro para los conocidos.
@@ -205,10 +222,41 @@ public class Graph : MonoBehaviour
         // Nos falta comprobar por qué se rompió el ciclo while de arriba.
         // Si esto se cumple, es porque sí llegamos a la meta.
         if (Goal == CurrentNode)
+        {
+            // Ahorita no hacemos nada más con ella, pero si lo quisiéramos hacer, pues de aquí la tomaríamos.
+            PathToGoal = Backtrack(CurrentNode);
+
             return true;
+        }
 
         // Si no, ¡pues no!
         return false;
+    }
+
+    // únicamente necesitamos que nos pasen el nodo desde el cual se quiere realizar el Backtracking.
+    List<Node> Backtrack(Node inNode)
+    {
+        Node TempNode = inNode;
+
+        // Aquí ya llegamos a la meta. Estamos parados en el nodo Goal.
+        List<Node> InvertedPathToGoal = new List<Node>();
+        InvertedPathToGoal.Add(TempNode);
+
+        while (TempNode != TempNode.Parent)  // esta condición solo se cumple en el nodo Origin.
+        {
+            TempNode = TempNode.Parent;
+            InvertedPathToGoal.Add(TempNode);
+        }
+
+        // Necesitamos invertir la lista porque el back nos la da en el orden inverso.
+        List<Node> PathToGoal = new List<Node>();
+        for (int i = InvertedPathToGoal.Count - 1; i >= 0; i--)
+        {
+            PathToGoal.Add(InvertedPathToGoal[i]);
+            Debug.Log("El nodo: " + InvertedPathToGoal[i].Name + " fue parte del camino a la meta.");
+        }
+
+        return PathToGoal;
     }
 
     // Hacemos una función que nos dé los vecinos para poder reutilizarla y que nuestras funciones no tengan tantas líneas de código.
