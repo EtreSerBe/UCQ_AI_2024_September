@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.Experimental.GraphView;
@@ -18,6 +19,8 @@ public class Node
     public string Name = "";  // es string por pura claridad, idealmente se usan ints para diferenciar objetos.
 
     public Node Parent;  // referencia al nodo padre de este nodo en el árbol que se genera durante un Pathfinding.
+
+    public float Priority = Single.PositiveInfinity;
 }
 
 public class Edge
