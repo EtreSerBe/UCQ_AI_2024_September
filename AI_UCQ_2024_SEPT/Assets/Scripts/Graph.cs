@@ -10,10 +10,11 @@ using static UnityEngine.UI.Image;
 
 public class Node
 {
-    public Node(string inName)
+    public Node(string inName, Vector3 inCoords)
     {
         Name = inName;
         Parent = null;
+        Coords = inCoords;
     }
 
     public string Name = "";  // es string por pura claridad, idealmente se usan ints para diferenciar objetos.
@@ -21,6 +22,16 @@ public class Node
     public Node Parent;  // referencia al nodo padre de este nodo en el árbol que se genera durante un Pathfinding.
 
     public float Priority = Single.PositiveInfinity;
+
+    public Vector3 Coords;
+
+    // Nos da la prioridad (heurística) respecto a la pura distancia entre este nodo y otro nodo
+    public float GetDistance(Node otherNode)
+    {
+        // Ahorita dijimos que va a hacer un teorema de Pitágoras entre las coordenadas de ambos nodos.
+        Priority = Vector3.Distance(Coords, otherNode.Coords);
+        return Priority;
+    }
 }
 
 public class Edge
@@ -75,19 +86,23 @@ public class Graph : MonoBehaviour
     protected HashSet<Edge> EdgeSet = new HashSet<Edge>();
 
 
+    [SerializeField]
+    private Transform[] NodePositions = new Transform[8];
+
+
     // Start is called before the first frame update
     void Start()
     {
         // Vamos a llenar nuestros sets de nodos y aristas.
         // Comenzamos creando todos los nodos, porque las aristas necesitan que ya existan los nodos.
-        Node NodeA = new Node("A");
-        Node NodeB = new Node("B");
-        Node NodeC = new Node("C");
-        Node NodeD = new Node("D");
-        Node NodeE = new Node("E");
-        Node NodeF = new Node("F");
-        Node NodeG = new Node("G");
-        Node NodeH = new Node("H");
+        Node NodeA = new Node("A", NodePositions[0].position);
+        Node NodeB = new Node("B", NodePositions[1].position);
+        Node NodeC = new Node("C", NodePositions[2].position);
+        Node NodeD = new Node("D", NodePositions[3].position);
+        Node NodeE = new Node("E", NodePositions[4].position);
+        Node NodeF = new Node("F", NodePositions[5].position);
+        Node NodeG = new Node("G", NodePositions[6].position);
+        Node NodeH = new Node("H", NodePositions[7].position);
 
         NodeSet.Add(NodeA);
         NodeSet.Add(NodeB);
@@ -105,7 +120,7 @@ public class Graph : MonoBehaviour
         Edge EdgeBD = new Edge("BD", NodeB, NodeD);
         Edge EdgeEF = new Edge("EF", NodeE, NodeF);
         Edge EdgeEG = new Edge("EG", NodeE, NodeG);
-        Edge EdgeEH = new Edge("EH", NodeE, NodeH);
+        // Edge EdgeEH = new Edge("EH", NodeE, NodeH);
 
         EdgeSet.Add(EdgeAB);
         EdgeSet.Add(EdgeAE);
@@ -113,30 +128,30 @@ public class Graph : MonoBehaviour
         EdgeSet.Add(EdgeBD);
         EdgeSet.Add(EdgeEF);
         EdgeSet.Add(EdgeEG);
-        EdgeSet.Add(EdgeEH);
+        // EdgeSet.Add(EdgeEH);
 
         List<Node> PathToGoalDFS = new List<Node>();
 
         // OJO: no olviden poner el out antes de los parámetros que son de salida.
-        if (DFS(NodeA, NodeH, out PathToGoalDFS))
+        if (BestFirstSearch(NodeA, NodeH, out PathToGoalDFS))
         {
-            Debug.Log("ITERATIVO: Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+            Debug.Log("Best First Search: Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
         else
         {
-            Debug.Log("ITERATIVO: No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+            Debug.Log("Best First Search: No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
         }
 
         ResetNodes(NodeSet);
 
-        if (RecursiveDFS(NodeA, NodeH))
-        {
-            Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
-        }
-        else
-        {
-            Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
-        }
+        //if (RecursiveDFS(NodeA, NodeH))
+        //{
+        //    Debug.Log("Sí hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        //}
+        //else
+        //{
+        //    Debug.Log("No hay camino del nodo: " + NodeA.Name + " hacia el nodo: " + NodeH.Name);
+        //}
 
 
         // FuncionRecursiva(0);  // comentada para que no truene ahorita.
@@ -151,6 +166,69 @@ public class Graph : MonoBehaviour
         }
     }
 
+
+    bool BestFirstSearch(Node Origin, Node Goal, out List<Node> PathToGoal)
+    {
+        PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
+
+        // Nodos cerrados es: ya no se tocan, solo sirven para checar si un nodo ya está cerrado o no.
+        HashSet<Node> closedNodesSet = new HashSet<Node>();
+
+        // Nodos Abiertos es: si un nodo está abierto, es porque todavía no está cerrado, entonces hay que cerrarlo, y para hacerlo
+        // hay que hacerle todo lo necesario, que en este caso es meter a todos sus vecinos posibles a la lista de nodos abiertos.
+        PriorityQueue openNodesPriorityQueue = new PriorityQueue();
+
+        // Con esto evitamos que algún otro nodo trate de meter al origin en los nodos por visitar.
+        // Según veo, esto no es necesario mas que en DFS, pero me lo traigo por si las dudas de mientras.
+        Origin.Parent = Origin;
+
+        openNodesPriorityQueue.Insert(Origin, Origin.GetDistance(Goal));
+
+        Node CurrentNode = null;
+
+
+        // El ciclo sigue hasta que A) lleguemos a la meta o B) no haya más nodos abiertos.
+        while (openNodesPriorityQueue.Count() > 0)
+        {
+            CurrentNode = openNodesPriorityQueue.Dequeue();
+            closedNodesSet.Add(CurrentNode); // lo metemos a la lista cerrada en cuanto lo sacamos de la lista abierta.
+
+            // Ya sabemos que en cuanto lleguemos a la meta nos podemos salir de TODA la función, no solo del while, 
+            // entonces podemos hacer eso.
+            if (CurrentNode == Goal)
+            {
+                return true;
+            }
+
+            // Si no se ha cumplido ninguna de esas condiciones, 
+            List<Node> Neighbors = GetNeighbors(CurrentNode);
+
+            // Ahora revisamos cuáles ya están cerrados, abiertos, o desconocidos, y hacer lo que corresponda con cada uno de ellos.
+            foreach (Node neighbor in Neighbors)
+            {
+                if (closedNodesSet.Contains(neighbor))
+                    continue; // si ya está en lo cerrados, no hay nada que hacer con él. Nos pasamos al siguiente vecino.
+
+                // Ahora checamos si el vecino ya tiene padre; si sí, nosotros no debemos de hacer nada con él. (en este algoritmo)
+                if (neighbor.Parent != null)
+                    continue;
+
+                if (openNodesPriorityQueue.Contains(neighbor))
+                    continue;
+
+                // A los que no estén en ninguna de las tres condiciones anteriores, a esos sí los podemos meter a la lista 
+                // calculando su distancia (heurística) respecto al nodo Goal, y los hacemos hijos de este CurrentNode.
+                openNodesPriorityQueue.Insert(neighbor, neighbor.GetDistance(Goal));
+                neighbor.Parent = CurrentNode;
+            }
+
+
+        }
+
+
+
+        return false;
+    }
 
     // Nuestro DFS iterativo debe dar exactamente los mismos resultados que el recursivo.
     // Nos dice si hay un camino desde un Nodo Origen hasta un nodo Destino (de un grafo)

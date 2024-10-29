@@ -6,6 +6,11 @@ public class PriorityQueue
 {
     private LinkedList<Node> NodeList;
 
+    public PriorityQueue()
+    {
+        NodeList = new LinkedList<Node>();
+    }
+
     // Queremos insertar/quitar elementos según su prioridad, 
     // de manera que vayan quedando siempre ordenados.
 
