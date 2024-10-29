@@ -15,7 +15,7 @@ public class PriorityQueue
     // de manera que vayan quedando siempre ordenados.
 
     // Función de meter elementos se debe de llamar "insertar"
-    public void Insert(Node inNode, float Priority)
+    public void Insert(Node inNode, float Priority, NodePriority inPriorityType)
     {
         // Primero hay que checar que la NodeList no esté vacía.
         if (NodeList.Count == 0)
@@ -26,10 +26,10 @@ public class PriorityQueue
             return;
         }
 
-        // Debe de buscar la nodo actualmente dentro de la lista cuya prioridad sea más grande que la suya (Priority).
+        // Debe de buscar la nodo actualmente dentro de la lista cuya prioridad sea más grande que la suya (DistancePriority).
         // cuando encuentras un nodo con prioridad mayor, es porque este nodo inNode debe de ir antes de él.
         LinkedListNode<Node> currentLinkedNode = NodeList.First;
-        while (currentLinkedNode.Value.Priority < Priority)
+        while (currentLinkedNode.Value.GetPriority(inPriorityType) <= Priority)
         {
             // Si se sigue cumpliendo la condición del while, pasa al siguiente nodo de la lista.
             currentLinkedNode = currentLinkedNode.Next;
@@ -66,6 +66,11 @@ public class PriorityQueue
 
         // y lo regresamos para hacer lo que necesitemos con este nodo.
         return OutNode;
+    }
+
+    public void Remove(Node inNode)
+    {
+        NodeList.Remove(inNode);
     }
 
     public bool Contains(Node inNode)
