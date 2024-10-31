@@ -32,7 +32,9 @@ public class Node
 
     public float Weight = 1;  // este uno porque queremos que cada paso al menos nos cueste 1, para que el algoritmo funcione.
 
-    public float TotalWeight = Single.PositiveInfinity;
+    public float AccumulatedWeight = Single.PositiveInfinity;
+
+    public float AccumulatedPlusDistance = Single.PositiveInfinity;
 
     public Vector3 Coords;
 
@@ -43,9 +45,9 @@ public class Node
             case NodePriority.BestFirst:
                 return DistancePriority;
             case NodePriority.Djikstra:
-                return TotalWeight;
+                return AccumulatedWeight;
             case NodePriority.AStar:
-                return 0.0f;
+                return AccumulatedPlusDistance;
             default:
                 return 0.0f;
         }
@@ -172,11 +174,11 @@ public class Graph : MonoBehaviour
         {
             if (node.Parent != null)
             {
-                Debug.Log(" Nodo: " + node.Name + " su total weight = " + node.TotalWeight + ", hijo de nodo: " + node.Parent.Name);
+                Debug.Log(" Nodo: " + node.Name + " su total weight = " + node.AccumulatedWeight + ", hijo de nodo: " + node.Parent.Name);
             }
             else
             {
-                Debug.Log(" Nodo: " + node.Name + " su total weight = " + node.TotalWeight + ", y es el origen.");
+                Debug.Log(" Nodo: " + node.Name + " su total weight = " + node.AccumulatedWeight + ", y es el origen.");
             }
         }
 
@@ -222,7 +224,7 @@ public class Graph : MonoBehaviour
     // cambiando el último de 1,000,000 a 999,998.5
     // en el peor de los casos nos costó 2*n
 
-    bool Djikstra(Node Origin, Node Goal, out List<Node> PathToGoal)
+    bool AStar(Node Origin, Node Goal, out List<Node> PathToGoal)
     {
         PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
 
@@ -235,8 +237,8 @@ public class Graph : MonoBehaviour
 
         // Es importante que el origin tenga 
         // Origin.Weight = 0; // por ahora podemos omitir este pasito. Pero en cada caso puede cambiar.
-        Origin.TotalWeight = Origin.Weight;
-        openNodesPriorityQueue.Insert(Origin, Origin.TotalWeight, NodePriority.Djikstra);
+        Origin.AccumulatedWeight = Origin.Weight;
+        openNodesPriorityQueue.Insert(Origin, Origin.AccumulatedWeight, NodePriority.Djikstra);
 
         Node CurrentNode = null;
 
@@ -263,10 +265,10 @@ public class Graph : MonoBehaviour
                     continue; // si ya está en lo cerrados, no hay nada que hacer con él. Nos pasamos al siguiente vecino.
 
                 // Ahora checamos si el vecino ya tiene padre; si sí, checamos si el peso total de neighbor 
-                // es mejor que si currentNode fuera su padre (es decir, con el currentNode.TotalWeight).
+                // es mejor que si currentNode fuera su padre (es decir, con el currentNode.AccumulatedWeight).
                 if (neighbor.Parent != null)
                 {
-                    if (neighbor.TotalWeight > neighbor.Weight + CurrentNode.TotalWeight)
+                    if (neighbor.AccumulatedWeight > neighbor.Weight + CurrentNode.AccumulatedWeight)
                     {
                         // Si sí es un mejor camino, entonces le actualizamos al neighbor su parent y su total weight.
                         // Primero lo sacamos de la lista.
@@ -275,6 +277,90 @@ public class Graph : MonoBehaviour
                         // Y ahora hay que cambiarle su lugar en la lista Abierta.
                         // Este proceso se realiza abajo, como si no hubiera tenido el parent.
                     }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                neighbor.Parent = CurrentNode;
+                neighbor.AccumulatedWeight = neighbor.Weight + CurrentNode.AccumulatedWeight;
+
+                // Le decimos: este es tu valor de heurística (distance)
+                neighbor.GetDistance(Goal);  // esta función ya le setea su Distance internamente.
+
+                // Y este es tu valor "f", que es la heurística más el peso acumulado.
+                neighbor.AccumulatedPlusDistance = neighbor.AccumulatedWeight + neighbor.DistancePriority;
+
+                // Finalmente, lo metemos en la fila de prioridad (lista abierta) usando el valor F como prioridad.
+
+                // A los que no estén en ninguna de las tres condiciones anteriores, a esos sí los podemos meter a la lista 
+                // calculando su distancia (heurística) respecto al nodo Goal, y los hacemos hijos de este CurrentNode.
+                openNodesPriorityQueue.Insert(neighbor, neighbor.AccumulatedPlusDistance, NodePriority.AStar);
+            }
+        }
+
+        return false;
+    }
+
+
+    bool Djikstra(Node Origin, Node Goal, out List<Node> PathToGoal)
+    {
+        PathToGoal = new List<Node>(); // Lo inicializamos en 0 por defecto por si no encontramos ningún camino.
+
+        // Nodos cerrados es: ya no se tocan, solo sirven para checar si un nodo ya está cerrado o no.
+        HashSet<Node> closedNodesSet = new HashSet<Node>();
+
+        // Nodos Abiertos es: si un nodo está abierto, es porque todavía no está cerrado, entonces hay que cerrarlo, y para hacerlo
+        // hay que hacerle todo lo necesario, que en este caso es meter a todos sus vecinos posibles a la lista de nodos abiertos.
+        PriorityQueue openNodesPriorityQueue = new PriorityQueue();
+
+        // Es importante que el origin tenga 
+        // Origin.Weight = 0; // por ahora podemos omitir este pasito. Pero en cada caso puede cambiar.
+        Origin.AccumulatedWeight = Origin.Weight;
+        openNodesPriorityQueue.Insert(Origin, Origin.AccumulatedWeight, NodePriority.Djikstra);
+
+        Node CurrentNode = null;
+
+        // El ciclo sigue hasta que A) lleguemos a la meta o B) no haya más nodos abiertos.
+        while (openNodesPriorityQueue.Count() > 0)
+        {
+            CurrentNode = openNodesPriorityQueue.Dequeue();
+            closedNodesSet.Add(CurrentNode); // lo metemos a la lista cerrada en cuanto lo sacamos de la lista abierta.
+
+            // Ya sabemos que en cuanto lleguemos a la meta nos podemos salir de TODA la función, no solo del while, 
+            // entonces podemos hacer eso.
+            if (CurrentNode == Goal)
+            {
+                return true;
+            }
+
+            // Si no se ha cumplido ninguna de esas condiciones, 
+            List<Node> Neighbors = GetNeighbors(CurrentNode);
+
+            // Ahora revisamos cuáles ya están cerrados, abiertos, o desconocidos, y hacer lo que corresponda con cada uno de ellos.
+            foreach (Node neighbor in Neighbors)
+            {
+                if (closedNodesSet.Contains(neighbor))
+                    continue; // si ya está en lo cerrados, no hay nada que hacer con él. Nos pasamos al siguiente vecino.
+
+                // Ahora checamos si el vecino ya tiene padre; si sí, checamos si el peso total de neighbor 
+                // es mejor que si currentNode fuera su padre (es decir, con el currentNode.AccumulatedWeight).
+                if (neighbor.Parent != null)
+                {
+                    if (neighbor.AccumulatedWeight > neighbor.Weight + CurrentNode.AccumulatedWeight)
+                    {
+                        // Si sí es un mejor camino, entonces le actualizamos al neighbor su parent y su total weight.
+                        // Primero lo sacamos de la lista.
+                        openNodesPriorityQueue.Remove(neighbor);
+
+                        // Y ahora hay que cambiarle su lugar en la lista Abierta.
+                        // Este proceso se realiza abajo, como si no hubiera tenido el parent.
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 // Si el nodo ya tiene Parent quiere decir que está en la lista abierta.
@@ -282,11 +368,11 @@ public class Graph : MonoBehaviour
                 //    continue;
 
                 neighbor.Parent = CurrentNode;
-                neighbor.TotalWeight = neighbor.Weight + CurrentNode.TotalWeight;
+                neighbor.AccumulatedWeight = neighbor.Weight + CurrentNode.AccumulatedWeight;
 
                 // A los que no estén en ninguna de las tres condiciones anteriores, a esos sí los podemos meter a la lista 
                 // calculando su distancia (heurística) respecto al nodo Goal, y los hacemos hijos de este CurrentNode.
-                openNodesPriorityQueue.Insert(neighbor, neighbor.TotalWeight, NodePriority.Djikstra);
+                openNodesPriorityQueue.Insert(neighbor, neighbor.AccumulatedWeight, NodePriority.Djikstra);
             }
         }
 
