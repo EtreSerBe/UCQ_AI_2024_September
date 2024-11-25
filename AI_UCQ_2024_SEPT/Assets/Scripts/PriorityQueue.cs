@@ -79,13 +79,13 @@ public class PriorityQueue
                     return;
                 }
             }
+
+            // Si sí se sale del while, quiere decir que encontramos dónde debemos de insertar este nodo.
+            // Si el currentLinkedNode tiene una prioridad mayor, entonces inNode debe de ir antes que él
+
+            // Le pedimos a la NodeList que lo meta antes de currentLinkedNode y listo.
+            NodeList.AddBefore(currentLinkedNode, inNode);
         }
-
-        // Si sí se sale del while, quiere decir que encontramos dónde debemos de insertar este nodo.
-        // Si el currentLinkedNode tiene una prioridad mayor, entonces inNode debe de ir antes que él
-
-        // Le pedimos a la NodeList que lo meta antes de currentLinkedNode y listo.
-        NodeList.AddBefore(currentLinkedNode, inNode);
     }
 
     // Ahora hacemos la función de quitar del inicio de la Fila:
