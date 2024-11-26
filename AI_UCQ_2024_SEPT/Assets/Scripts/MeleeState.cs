@@ -9,6 +9,7 @@ public class MeleeState : BaseState
 
     public enum MeleeSubstate
     {
+        SubstateSelection,
         BasicAttack,
         Dash,
         AreaAttack,
@@ -60,32 +61,91 @@ public class MeleeState : BaseState
 
         if (enemyFSMRef != null && owner != null)
         {
-            StartCoroutine(Buildup());
+            // StartCoroutine(Buildup());
         }
     }
 
-    IEnumerator Buildup()
+    void OnExitBasicAttack()
     {
-        Debug.Log("Empecé Build-Up");
-        yield return new WaitForSeconds(1);
-        Debug.Log("Terminé Build-Up");
-        StartCoroutine(AreaAttack());
+        Debug.Log("On exit del basic attack, aquí liberaría los recursos que solamente necesita este subestado.");
+        SubstateEntered = false;
+    }
+
+    IEnumerator Buildup(float BuildupTime, IEnumerator CoroutineName)
+    {
+        if(((BossEnemy)owner).EnableDebug)
+            Debug.Log("Empecé Build-Up " + CoroutineName.ToString());
+        yield return new WaitForSeconds(BuildupTime);
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Terminé Build-Up " + CoroutineName.ToString());
+        StartCoroutine(CoroutineName);
     }
 
     IEnumerator AreaAttack()
     {
-        Debug.Log("Empecé Area attack");
-        yield return new WaitForSeconds(2);
-        Debug.Log("Terminé area attack");
-        StartCoroutine(Cooldown());
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Empecé Area attack");
+
+        BossEnemy bossEnemy = (BossEnemy)owner;
+        int counter = 0;
+
+        int NumAttacks = Random.Range(2, 5);
+        float TimeBetweenAttacks = bossEnemy.AreaAttackTime / NumAttacks;
+
+        while (counter < NumAttacks)
+        {
+            if (((BossEnemy)owner).EnableDebug)
+                Debug.Log("Atacando de área número: " + counter);
+
+            yield return new WaitForSeconds(TimeBetweenAttacks + Random.Range(-TimeBetweenAttacks/2.0f, TimeBetweenAttacks/2));
+            counter++;
+        }
+
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Terminé area attack");
+        StartCoroutine(Cooldown(bossEnemy.AreaAttackCooldownTime, "Melee Area attack"));
     }
 
-    IEnumerator Cooldown()
+    IEnumerator DashAttack()
     {
-        Debug.Log("Empecé Cooldown");
-        yield return new WaitForSeconds(1);
-        Debug.Log("Terminé cooldown");
-        _meleeSubstate = MeleeSubstate.BasicAttack;
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Empecé Dash attack");
+
+        BossEnemy bossEnemy = (BossEnemy)owner;
+        int counter = 0;
+
+        int NumAttacks = Random.Range(2, 5);
+        float TimeBetweenAttacks = bossEnemy.AreaAttackTime / NumAttacks;
+
+        while (counter < NumAttacks)
+        {
+            if (((BossEnemy)owner).EnableDebug)
+                Debug.Log("Atacando de dash número: " + counter);
+
+            yield return new WaitForSeconds(TimeBetweenAttacks + Random.Range(-TimeBetweenAttacks / 2.0f, TimeBetweenAttacks / 2));
+            counter++;
+        }
+
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Terminé Dash attack");
+        StartCoroutine(Cooldown(bossEnemy.DashCooldownTime, "Melee Dash"));
+    }
+
+    IEnumerator Cooldown(float CooldownTime, string ActionOnCooldown)
+    {
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Empecé Cooldown de " + ActionOnCooldown);
+        yield return new WaitForSeconds(CooldownTime);
+        if (((BossEnemy)owner).EnableDebug)
+            Debug.Log("Terminé cooldown de " + ActionOnCooldown);
+
+        GoToSelectionState();
+    }
+
+    // En árboles de decisiones esto se conoce como GoToParent o GoToRoot.
+    void GoToSelectionState()
+    {
+        _meleeSubstate = MeleeSubstate.SubstateSelection;
         SubstateEntered = false;
     }
 
@@ -130,8 +190,9 @@ public class MeleeState : BaseState
                 if(BasicAttackCounter >= 3 && owner.IsPlayerInRange(10))
                 {
                     // si se cumplen estas dos condiciones, entonces cambiamos al subestado de ataque de área (AreaAttack).
-
-                    // Hacer ataque de área
+                    OnExitBasicAttack();
+                    _meleeSubstate = MeleeSubstate.AreaAttack;
+                    return;
                 }
 
                 // Cuando vayamos a salir del Subestado de BasicAttack, tenemos que cambiar "SubstateEntered" a false
@@ -139,6 +200,7 @@ public class MeleeState : BaseState
 
                 break;
             case MeleeSubstate.Dash:
+                StartCoroutine(Buildup(((BossEnemy)owner).DashBuildupTime, DashAttack()));
                 break;
             case MeleeSubstate.AreaAttack:
                 // Cuando entra a este subestado NO se mueve hacia el jugador (al menos la del juego de Hades)
@@ -149,7 +211,8 @@ public class MeleeState : BaseState
                     owner.navMeshAgent.SetDestination(owner.transform.position);
 
                     // Iniciar el build-up del ataque.
-                    StartCoroutine(Buildup());
+                    StartCoroutine(Buildup(((BossEnemy)owner).AreaAttackBuildupTime, AreaAttack()));
+                    // return; pero no es necesario por cómo está especificado mi subestado de AreaAttack.
                 }
 
                 // Hace build-up

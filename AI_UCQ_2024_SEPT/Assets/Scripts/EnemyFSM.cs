@@ -20,6 +20,7 @@ public class EnemyFSM : BaseFSM
     {  get { return _alertState; } }
 
 
+    // Context.
     public BaseEnemy Owner;
 
 

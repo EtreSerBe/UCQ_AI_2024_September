@@ -12,7 +12,7 @@ public class BaseEnemy : MonoBehaviour
     public GameObject PlayerRef;
 
     // Start is called before the first frame update
-    void Awake()
+    public virtual void Awake()
     {
         PlayerRef = GameObject.Find("Player");
         if (PlayerRef == null)
