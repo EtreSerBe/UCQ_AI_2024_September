@@ -709,9 +709,13 @@ MonoBehaviour:
   HP: 10
   VisionRange: 20
   PlayerRef: {fileID: 0}
+  NumberOfBasicAttacksBeforeExit: 3
+  BasicAttackRange: 5
   AreaAttackTime: 2
   AreaAttackBuildupTime: 2
   AreaAttackCooldownTime: 1
+  AreaAttackRange: 1
+  DashAttackTime: 1
   DashBuildupTime: 0.3
   DashCooldownTime: 1
   EnableDebug: 1

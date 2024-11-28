@@ -37,7 +37,7 @@ public class BaseState : MonoBehaviour
     // Update sí se va a llamar cada frame, pero solo cuando sea el estado actual de la FSM.
     public virtual void OnUpdate()
     {
-        Debug.Log("OnUpdate del estado: " + Name);
+        // Debug.Log("OnUpdate del estado: " + Name);
     }
 
     // Exit se llama cuando la FSM remueve a este estado de ser el estado actual.
